@@ -65,6 +65,13 @@ both React and Solid 1.x. The rules below are the project-specific decisions.
     There is no React #9023 workaround needed; delete comments referencing it and
     the corresponding `event.nativeEvent.defaultPrevented` checks become
     `event.defaultPrevented` where still meaningful.
+10a. **Focus events don't bubble like React's.** React's `onFocus`/`onBlur`
+    use `focusin`/`focusout` semantics (they fire for focus changes on
+    descendants). Solid's `onFocus`/`onBlur` attach the native non-bubbling
+    events. When the React handler relies on catching descendant focus
+    (a root/wrapper element listening for focus inside), port it to
+    `onFocusIn`/`onFocusOut`; when it only cares about the element itself,
+    keep `onFocus`/`onBlur`.
 11. **`style` values** may be objects (hyphenated keys per Solid's `JSX.CSSProperties`)
     or strings. React camelCase style objects must be translated to hyphenated keys
     (`clipPath` → `'clip-path'`). Pure style constants from `@base-ui/utils`

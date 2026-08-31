@@ -330,7 +330,9 @@ export function useCompositeRoot(params: UseCompositeRootParameters) {
 
   const props: HTMLProps = {
     ref: mergedRef,
-    onFocus(event: FocusEvent) {
+    // React's `onFocus` bubbles (focusin semantics); Solid's does not, and this
+    // handler must catch focus moving to composite items inside the root.
+    onFocusIn(event: FocusEvent) {
       const element = rootRef.current;
       const target = getTarget(event);
       if (!element || target == null || !isNativeInput(target)) {
