@@ -55,6 +55,11 @@ overrides:
   tar: '^7.5.22'
   # via @vitest/browser (GHSA-96hv-2xvq-fx4p)
   ws: '^8.21.3'
+  # solid-js@2.0.0-rc depends on its own subpackages with stable ranges (>=2.0.0 <3.0.0)
+  # that semver does not match against prerelease versions; pin the matching RCs.
+  'solid-js': '2.0.0-rc.4'
+  '@solidjs/web': '2.0.0-rc.4'
+  '@solidjs/signals': '2.0.0-rc.4'
 engineStrict: true
 updateNotifier: false
 blockExoticSubdeps: true
@@ -62,7 +67,21 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@base-ui/*'
   - '@mui/internal-*'
+  # The SolidJS 2.0 port tracks upstream release candidates as they are published.
+  - 'solid-js'
+  - '@solidjs/*'
+  - 'babel-preset-solid'
+  - 'vite-plugin-solid'
 trustPolicy: no-downgrade
+# The SolidJS 2.0 release candidates are currently published without provenance attestation,
+# which the no-downgrade policy would otherwise flag against older attested releases.
+trustPolicyExclude:
+  - 'solid-js'
+  - '@solidjs/*'
+  - 'babel-preset-solid'
+  - 'vite-plugin-solid'
+  - 'seroval'
+  - 'seroval-plugins'
 # Skip trust-policy checks for packages published more than 365 days ago.
 # Several widely-used legacy packages in the current dependency tree have releases that dropped
 # provenance attestation, triggering false-positive trust-downgrade errors. Packages that old have
