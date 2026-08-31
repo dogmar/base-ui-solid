@@ -105,6 +105,16 @@ both React and Solid 1.x. The rules below are the project-specific decisions.
 20. `useTransitionStatus(open, ...)` → `useTransitionStatus(() => open(), ...)`;
     `mounted` and `transitionStatus` come back as accessors.
 
+20a. **Register/release effects need an idempotence guard.** The React pattern
+    "effect writes a registration signal its compute tracks, cleanup releases
+    it" oscillates in Solid 2.0 (`createRenderEffect` can re-run its apply
+    phase with an unchanged computed value). Guard with a last-synced check
+    and release in `onCleanup` instead of a per-apply cleanup — see
+    `utils/useRegisteredLabelId.ts`.
+20b. **In tests, cascaded updates (effect → signal write → effect) may need a
+    second `flush()`** or a `waitFor`: one `flush()` does not always drain
+    writes queued by the effects it runs.
+
 ## Contexts
 
 21. React `createContext<T | undefined>(undefined)` + optional read →
