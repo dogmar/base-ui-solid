@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 
@@ -8,6 +9,10 @@ export default defineConfig({
   },
   resolve: {
     conditions: ['development', 'browser'],
+    alias: {
+      '@base-ui/utils': path.join(import.meta.dirname, '../utils/src'),
+      '@base-ui/solid': path.join(import.meta.dirname, 'src'),
+    },
   },
   test: {
     globals: true,

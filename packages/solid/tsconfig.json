@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "allowImportingTsExtensions": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"],
     "paths": {
       "@base-ui/solid": ["./src"],
       "@base-ui/solid/*": ["./src/*"],
