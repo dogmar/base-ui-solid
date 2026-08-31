@@ -29,6 +29,11 @@ export type ControlledSetter<T> = (next: T | ((prev: T) => T)) => void;
  * The controlled/uncontrolled mode is fixed on the first read, matching the
  * React implementation. Returns a reactive accessor for the current value and
  * a setter that only takes effect in uncontrolled mode.
+ *
+ * The setter treats function arguments as updaters (React `setState`
+ * semantics). When the stored value may itself be a function (arbitrary
+ * user-supplied values), always commit via the updater form:
+ * `setValue(() => newValue)`.
  */
 export function useControlled<T = unknown>(
   props: Omit<UseControlledProps<T>, 'default'> & { default: T },
