@@ -177,17 +177,22 @@ export function FieldError(componentProps: FieldError.Props): JSX.Element {
         // provides no children of their own; a user `children` entry arrives
         // through `elementProps` and wins by rightmost-entry precedence.
         get children() {
-          const message = displayedError();
-          if (Array.isArray(message)) {
-            return (
-              <Show when={message.length > 1} fallback={message[0]}>
-                <ul>
-                  <For each={message}>{(item) => <li>{item}</li>}</For>
-                </ul>
-              </Show>
-            ) as JSX.Element;
-          }
-          return message as JSX.Element;
+          // Return a thunk so the engine's stable-children path wraps the
+          // message in a memo — an eagerly resolved string would be cached
+          // permanently and the displayed error text would never update.
+          return (() => {
+            const message = displayedError();
+            if (Array.isArray(message)) {
+              return (
+                <Show when={message.length > 1} fallback={message[0]}>
+                  <ul>
+                    <For each={message}>{(item) => <li>{item}</li>}</For>
+                  </ul>
+                </Show>
+              ) as JSX.Element;
+            }
+            return message as JSX.Element;
+          }) as unknown as JSX.Element;
         },
       },
       elementProps,

@@ -205,4 +205,30 @@ describe('<Field.Error />', () => {
     });
     expect(input).not.toHaveAttribute('aria-describedby');
   });
+
+  it('updates the displayed message while the error stays mounted', async () => {
+    render(() => (
+      <Field.Root
+        validationMode="onChange"
+        validate={(value) => (value === 'a' ? 'error A' : 'error B')}
+      >
+        <Field.Control />
+        <Field.Error data-testid="error" />
+      </Field.Root>
+    ));
+
+    const input = screen.getByRole('textbox');
+
+    fireEvent.input(input, { target: { value: 'a' } });
+    flush();
+    await waitFor(() => {
+      expect(screen.getByTestId('error')).toHaveTextContent('error A');
+    });
+
+    fireEvent.input(input, { target: { value: 'b' } });
+    flush();
+    await waitFor(() => {
+      expect(screen.getByTestId('error')).toHaveTextContent('error B');
+    });
+  });
 });

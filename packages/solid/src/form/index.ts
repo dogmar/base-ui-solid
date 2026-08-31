@@ -1,1 +1,3 @@
-export type { Form, FormValidationMode } from './Form';
+export { Form } from './Form';
+
+export type * from './Form';
