@@ -131,6 +131,10 @@ both React and Solid 1.x. The rules below are the project-specific decisions.
     `NonNativeButtonProps`, `Orientation` etc. are all there.
 28. `React.CSSProperties` → `JSX.CSSProperties | string` (alias `StyleValue`).
     `import type { JSX } from '@solidjs/web'` (NOT from `solid-js`).
+29. Solid's JSX types boolean attributes as `boolean | ""` (e.g. `disabled`).
+    When a component reads such a prop, redeclare it as `boolean | undefined`
+    in the component's Props interface (matching the React surface) — most
+    Base UI prop interfaces already redeclare `disabled` with JSDoc anyway.
 
 ## Imports from `@base-ui/utils`
 

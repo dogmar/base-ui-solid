@@ -1,6 +1,7 @@
 import { createMemo, onCleanup, untrack, type Accessor } from 'solid-js';
 import { Dynamic, type JSX } from '@solidjs/web';
-import { spread } from '@solidjs/web';
+import { spread, insert } from '@solidjs/web';
+import { createStableChildren } from '../solid-utils/stableChildren';
 import { mergeObjects } from '@base-ui/utils/mergeObjects';
 import { warn } from '@base-ui/utils/warn';
 import { EMPTY_OBJECT } from '@base-ui/utils/empty';
@@ -50,10 +51,17 @@ export function useRenderElement<
     }
 
     const stateProps = getStateAttributesProps(state, params.stateAttributesMapping);
-    const resolvedProps = params.props ? resolveRenderFunctionProps(params.props) : undefined;
+    const resolvedProps = params.props
+      ? resolveRenderFunctionProps(hideChildrenEntries(params.props))
+      : undefined;
 
     // Ensure the result is always a new mutable object, never EMPTY_OBJECT.
     const merged: Record<string, any> = mergeObjects(stateProps, resolvedProps) ?? {};
+
+    // `children` must never flow through this reactive memo: re-reading the
+    // children getter on every prop change would re-create the entire child
+    // subtree. It is routed separately through `stableChildren` below.
+    delete merged.children;
 
     if (element === 'button' && merged.type === undefined) {
       merged.type = 'button';
@@ -90,9 +98,14 @@ export function useRenderElement<
     composedRef(null);
   });
 
+  // Children are kept out of the reactive merged props (see hideChildrenEntries)
+  // and evaluated once with per-child isolation.
+  const childrenReader = readChildren(params.props);
+  const stableChildren = childrenReader ? createStableChildren(childrenReader) : undefined;
+
   // A stable reactive view over the merged props, with the composed ref.
   // Property reads track the memo; spreading it in JSX stays reactive.
-  const propsProxy = createPropsProxy(outProps, composedRef);
+  const propsProxy = createPropsProxy(outProps, composedRef, stableChildren);
 
   // Spread source for JSX: a call expression keeps the compiled spread reactive.
   const spreadableProps = createMemo(() => {
@@ -111,11 +124,15 @@ export function useRenderElement<
         const renderProp = componentProps.render;
 
         if (renderProp) {
-          return evaluateRenderProp(renderProp, propsProxy, state, composedRef);
+          return evaluateRenderProp(renderProp, propsProxy, state, composedRef, stableChildren);
         }
 
         if (typeof element === 'string') {
-          return <Dynamic component={element as IntrinsicTagName} {...spreadableProps()} />;
+          return (
+            <Dynamic component={element as IntrinsicTagName} {...spreadableProps()}>
+              {stableChildren?.()}
+            </Dynamic>
+          );
         }
 
         // Unreachable, but the typings on `useRenderElement` need to be reworked
@@ -136,10 +153,57 @@ function resolveRenderFunctionProps(
   return mergeProps(undefined, props);
 }
 
+const CHILDREN_HIDING_TRAPS: ProxyHandler<Record<string, any>> = {
+  get: (target, key) => (key === 'children' ? undefined : Reflect.get(target, key)),
+  has: (target, key) => (key === 'children' ? false : Reflect.has(target, key)),
+  ownKeys: (target) => Reflect.ownKeys(target).filter((key) => key !== 'children'),
+  getOwnPropertyDescriptor: (target, key) =>
+    key === 'children' ? undefined : Reflect.getOwnPropertyDescriptor(target, key),
+};
+
+/**
+ * Wraps object prop entries so merging never evaluates their `children`
+ * getters — evaluating them inside the reactive merged-props memo would
+ * re-create the whole child subtree on every prop change.
+ */
+function hideChildrenEntries(
+  props: NonNullable<UseRenderElementParameters<any, any, any>['props']>,
+): NonNullable<UseRenderElementParameters<any, any, any>['props']> {
+  const hide = (entry: any) => {
+    if (!entry || typeof entry === 'function' || !('children' in entry)) {
+      return entry;
+    }
+    return new Proxy(entry, CHILDREN_HIDING_TRAPS);
+  };
+  return Array.isArray(props) ? (props.map(hide) as any) : hide(props);
+}
+
+/**
+ * Finds the rightmost object entry providing `children` and returns a lazy
+ * reader for it, matching the React merge's rightmost-wins semantics.
+ */
+function readChildren(
+  props: UseRenderElementParameters<any, any, any>['props'],
+): (() => any) | undefined {
+  const entries = Array.isArray(props) ? props : [props];
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    const entry = entries[i];
+    if (entry && typeof entry !== 'function' && 'children' in entry) {
+      return () => (entry as Record<string, any>).children;
+    }
+  }
+  return undefined;
+}
+
 function createPropsProxy(
   outProps: Accessor<Record<string, any>>,
   composedRef: (el: any) => void,
+  stableChildren: Accessor<JSX.Element> | undefined,
 ): Record<string, any> {
+  // Structural traps (has/ownKeys/descriptors) are untracked: Solid's spread
+  // and merge helpers enumerate keys inside render computations, and tracking
+  // the whole memo there would subscribe the entire element to every merged
+  // prop change. Value reads through `get` stay tracked.
   return new Proxy(
     {},
     {
@@ -147,24 +211,40 @@ function createPropsProxy(
         if (key === 'ref') {
           return composedRef;
         }
+        if (key === 'children') {
+          return stableChildren?.();
+        }
         return outProps()[key as string];
       },
       has(_target, key) {
         if (key === 'ref') {
           return true;
         }
-        return key in outProps();
+        if (key === 'children') {
+          return stableChildren !== undefined;
+        }
+        return untrack(() => key in outProps());
       },
       ownKeys() {
-        const keys = Reflect.ownKeys(outProps()).filter((key) => key !== 'ref');
+        const keys = untrack(() => Reflect.ownKeys(outProps())).filter(
+          (key) => key !== 'ref' && key !== 'children',
+        );
         keys.push('ref');
+        if (stableChildren !== undefined) {
+          keys.push('children');
+        }
         return keys;
       },
       getOwnPropertyDescriptor(_target, key) {
         if (key === 'ref') {
           return { configurable: true, enumerable: true, value: composedRef };
         }
-        const descriptor = Reflect.getOwnPropertyDescriptor(outProps(), key);
+        if (key === 'children') {
+          return stableChildren === undefined
+            ? undefined
+            : { configurable: true, enumerable: true, get: stableChildren };
+        }
+        const descriptor = untrack(() => Reflect.getOwnPropertyDescriptor(outProps(), key));
         if (descriptor) {
           descriptor.configurable = true;
         }
@@ -179,6 +259,7 @@ function evaluateRenderProp<State>(
   propsProxy: Record<string, any>,
   state: State,
   composedRef: (el: any) => void,
+  stableChildren: Accessor<JSX.Element> | undefined,
 ): JSX.Element {
   if (typeof render === 'function') {
     if (process.env.NODE_ENV !== 'production') {
@@ -201,6 +282,12 @@ function evaluateRenderProp<State>(
       },
     });
     spread(render, elementProxy, true);
+    // Mirror React's cloneElement semantics: the component's children replace
+    // the render element's own children when provided.
+    if (stableChildren !== undefined) {
+      render.textContent = '';
+      insert(render, stableChildren);
+    }
     composedRef(render);
     return render as unknown as JSX.Element;
   }

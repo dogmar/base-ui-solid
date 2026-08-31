@@ -59,6 +59,13 @@ export interface ButtonState {
 export interface ButtonProps
   extends NativeButtonProps, BaseUIComponentProps<'button', ButtonState> {
   /**
+   * Whether the component should ignore user interaction.
+   * Redeclared over the JSX attribute type (`boolean | ""`) to keep the
+   * React-identical `boolean` API surface.
+   * @default false
+   */
+  disabled?: boolean | undefined;
+  /**
    * Whether the button should be focusable when disabled.
    * @default false
    */
