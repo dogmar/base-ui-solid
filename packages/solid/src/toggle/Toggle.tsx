@@ -7,6 +7,8 @@ import { useRenderElement } from '../internals/useRenderElement';
 import type { BaseUIComponentProps, NativeButtonProps } from '../internals/types';
 import { useToggleGroupContext } from '../toggle-group/ToggleGroupContext';
 import { useButton } from '../internals/use-button/useButton';
+import { CompositeItem } from '../internals/composite/item/CompositeItem';
+import { applyRef, type Ref } from '../solid-utils/refs';
 import {
   type BaseUIChangeEventDetails,
   createChangeEventDetails,
@@ -91,7 +93,10 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
     },
   };
 
-  const refs = [buttonRef, componentProps.ref];
+  const refs: Ref<HTMLElement>[] = [
+    buttonRef,
+    (el: HTMLElement | null) => applyRef(componentProps.ref, el),
+  ];
   const props = [
     {
       get 'aria-pressed'() {
@@ -127,13 +132,49 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
     getButtonProps,
   ];
 
-  // TODO(composite): when the composite subsystem is ported, render through
-  // `CompositeItem` when inside a toggle group, matching the React version.
+  // A disabled toggle is natively disabled and cannot hold roving focus.
+  // Toolbar reads this metadata to compute its `disabledIndices`.
+  // (The object is stable; `disabled` is exposed through a reactive getter.)
+  const itemMetadata: ToggleItemMetadata = {
+    get disabled() {
+      return disabled();
+    },
+    focusableWhenDisabled: false,
+  };
+
+  // Context presence is fixed for the lifetime of the component, so this is a
+  // static branch (not a reactive condition).
+  if (groupContext) {
+    return (
+      <CompositeItem
+        tag="button"
+        render={componentProps.render}
+        className={componentProps.className}
+        class={componentProps.class}
+        style={componentProps.style}
+        metadata={itemMetadata}
+        state={state}
+        refs={refs}
+        props={props}
+      />
+    );
+  }
+
   return useRenderElement('button', componentProps, {
     state,
     ref: refs,
     props,
   });
+}
+
+/**
+ * Composite item metadata published by a `Toggle` rendered inside a group.
+ * Mirrors `ToolbarRoot.ItemMetadata` from the React package; move it there
+ * once the toolbar subsystem is ported.
+ */
+interface ToggleItemMetadata {
+  disabled: boolean;
+  focusableWhenDisabled: boolean;
 }
 
 export interface ToggleState {
