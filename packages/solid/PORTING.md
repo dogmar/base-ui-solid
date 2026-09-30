@@ -89,6 +89,11 @@ both React and Solid 1.x. The rules below are the project-specific decisions.
 14. `React.useRef` for DOM elements → `createRef<T>()` from `solid-utils/refs`
     (keeps `.current` reads working) or a plain `let` variable.
     `useMergedRefs` → `useMergedRefs` from `solid-utils/refs` (not reactive, no hook rules).
+14a. **Never call `onCleanup` inside a ref callback** — Solid applies refs in an
+    unowned phase, so the cleanup silently never registers (unmount teardown is
+    lost: stale registrations, leaked registry entries). Capture cleanup
+    functions in component-scope variables and release them from a
+    component-body `onCleanup` instead.
 15. `useIsoLayoutEffect(fn, [deps])` → `createRenderEffect(() => [deps...], ([deps]) => { fn })`.
     `React.useEffect(fn, [deps])` → `createEffect(compute, apply)` (two-arg form —
     single-arg is an error in Solid 2.0). A cleanup returned from React's effect
