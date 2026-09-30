@@ -4,7 +4,10 @@ import { EMPTY_ARRAY } from '@base-ui/utils/empty';
 import { useControlled } from '../solid-utils/useControlled';
 import { applyRef } from '../solid-utils/refs';
 import type { BaseUIComponentProps, HTMLProps, Orientation } from '../internals/types';
+import { useRenderElement } from '../internals/useRenderElement';
 import { CompositeRoot } from '../internals/composite/root/CompositeRoot';
+import { useToolbarRootContext } from '../toolbar/root/ToolbarRootContext';
+import { useToolbarGroupContext } from '../toolbar/group/ToolbarGroupContext';
 import { ToggleGroupContext } from './ToggleGroupContext';
 import type { BaseUIChangeEventDetails } from '../internals/createBaseUIEventDetails';
 import { REASONS } from '../internals/reasons';
@@ -33,12 +36,13 @@ export function ToggleGroup<Value extends string>(
     'ref',
   );
 
-  // TODO(toolbar): when the toolbar subsystem is ported, read the toolbar root
-  // and toolbar group contexts here to compose `disabled` and render a plain
-  // `role="group"` element (instead of a `CompositeRoot`) inside a toolbar,
-  // matching the React version.
+  const toolbarContext = useToolbarRootContext(true);
+  const toolbarGroupContext = useToolbarGroupContext();
 
-  const disabled = () => componentProps.disabled ?? false;
+  const disabled = () =>
+    (toolbarContext?.disabled() ?? false) ||
+    (toolbarGroupContext?.disabled() ?? false) ||
+    (componentProps.disabled ?? false);
   const loopFocus = () => componentProps.loopFocus ?? true;
   const orientation = () => componentProps.orientation ?? 'horizontal';
   const multiple = () => componentProps.multiple ?? false;
@@ -103,6 +107,21 @@ export function ToggleGroup<Value extends string>(
   const defaultProps: HTMLProps = {
     role: 'group',
   };
+
+  // Inside a toolbar the group is a plain `role="group"` element: its items
+  // register with the toolbar's composite root so the whole toolbar keeps a
+  // single roving tab stop. Context presence is fixed for the lifetime of the
+  // component, so this is a static branch (not a reactive condition).
+  if (toolbarContext) {
+    return (
+      <ToggleGroupContext value={contextValue}>
+        {useRenderElement('div', componentProps, {
+          state,
+          props: [defaultProps, elementProps],
+        })}
+      </ToggleGroupContext>
+    );
+  }
 
   return (
     <ToggleGroupContext value={contextValue}>

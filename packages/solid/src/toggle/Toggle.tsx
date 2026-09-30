@@ -6,6 +6,7 @@ import { useBaseUiId } from '../internals/useBaseUiId';
 import { useRenderElement } from '../internals/useRenderElement';
 import type { BaseUIComponentProps, NativeButtonProps } from '../internals/types';
 import { useToggleGroupContext } from '../toggle-group/ToggleGroupContext';
+import type { ToolbarRoot } from '../toolbar/root/ToolbarRoot';
 import { useButton } from '../internals/use-button/useButton';
 import { CompositeItem } from '../internals/composite/item/CompositeItem';
 import { applyRef, type Ref } from '../solid-utils/refs';
@@ -135,7 +136,7 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
   // A disabled toggle is natively disabled and cannot hold roving focus.
   // Toolbar reads this metadata to compute its `disabledIndices`.
   // (The object is stable; `disabled` is exposed through a reactive getter.)
-  const itemMetadata: ToggleItemMetadata = {
+  const itemMetadata: ToolbarRoot.ItemMetadata = {
     get disabled() {
       return disabled();
     },
@@ -165,16 +166,6 @@ export function Toggle<Value extends string>(componentProps: Toggle.Props<Value>
     ref: refs,
     props,
   });
-}
-
-/**
- * Composite item metadata published by a `Toggle` rendered inside a group.
- * Mirrors `ToolbarRoot.ItemMetadata` from the React package; move it there
- * once the toolbar subsystem is ported.
- */
-interface ToggleItemMetadata {
-  disabled: boolean;
-  focusableWhenDisabled: boolean;
 }
 
 export interface ToggleState {
