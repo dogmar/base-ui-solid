@@ -1,7 +1,5 @@
-// Mirrors packages/react/src/utils/popups/index.ts. Only the modules needed by
-// ported subsystems exist so far; later ports can extend it.
-// Still missing compared to React: `inlineRect` (Preview Card),
-// `useTriggerFocusGuards` (Popover/Menu).
+// Mirrors packages/react/src/utils/popups/index.ts.
+export * from './inlineRect';
 export * from './popupHandle';
 export * from './popupStoreUtils';
 export * from './popupTriggerMap';
