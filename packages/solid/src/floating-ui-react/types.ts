@@ -18,19 +18,19 @@ import type { FloatingRootStore } from './components/FloatingRootStore';
 export * from '.';
 export type { UseFloatingPortalNodeProps } from './components/FloatingPortal';
 // Not ported yet (interaction layer):
-// export type { FloatingDelayGroupProps } from './components/FloatingDelayGroup';
-// export type { FloatingFocusManagerProps } from './components/FloatingFocusManager';
-// export type { UseClientPointProps } from './hooks/useClientPoint';
-// export type { UseDismissProps } from './hooks/useDismiss';
-// export type { UseFocusProps } from './hooks/useFocus';
-// export type { UseHoverProps } from './hooks/useHover';
-// export type { HandleCloseContext, HandleClose } from './hooks/useHoverShared';
-// export type { UseHoverFloatingInteractionProps } from './hooks/useHoverFloatingInteraction';
-// export type { UseHoverReferenceInteractionProps } from './hooks/useHoverReferenceInteraction';
-// export type { UseListNavigationProps } from './hooks/useListNavigation';
-// export type { UseTypeaheadProps } from './hooks/useTypeahead';
+export type { FloatingDelayGroupProps } from './components/FloatingDelayGroup';
+export type { FloatingFocusManagerProps } from './components/FloatingFocusManager';
+export type { UseClientPointProps } from './hooks/useClientPoint';
+export type { UseDismissProps } from './hooks/useDismiss';
+export type { UseFocusProps } from './hooks/useFocus';
+export type { UseHoverProps } from './hooks/useHover';
+export type { HandleCloseContext, HandleClose } from './hooks/useHoverShared';
+export type { UseHoverFloatingInteractionProps } from './hooks/useHoverFloatingInteraction';
+export type { UseHoverReferenceInteractionProps } from './hooks/useHoverReferenceInteraction';
+export type { UseListNavigationProps } from './hooks/useListNavigation';
+export type { UseTypeaheadProps } from './hooks/useTypeahead';
 export type { UseFloatingRootContextOptions } from './hooks/useFloatingRootContext';
-// export type { SafePolygonOptions } from './safePolygon';
+export type { SafePolygonOptions } from './safePolygon';
 export type { FloatingTreeProps, FloatingNodeProps } from './components/FloatingTree';
 export type {
   AlignedPlacement,
