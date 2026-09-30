@@ -1,0 +1,52 @@
+import { omit } from 'solid-js';
+import type { BaseUIComponentProps, Orientation } from '../../internals/types';
+import { useRenderElement } from '../../internals/useRenderElement';
+
+/**
+ * A visual separator between items.
+ * Renders a `<div>` element.
+ *
+ * @internal
+ */
+export function ListboxSeparator(componentProps: ListboxSeparator.Props) {
+  const elementProps = omit(
+    componentProps,
+    'className',
+    'class',
+    'render',
+    'orientation',
+    'style',
+    'ref',
+  );
+
+  const state: ListboxSeparatorState = {
+    get orientation() {
+      return componentProps.orientation ?? 'horizontal';
+    },
+  };
+
+  return useRenderElement('div', componentProps, {
+    state,
+    props: [{ role: 'presentation' }, elementProps],
+  });
+}
+
+export interface ListboxSeparatorProps extends BaseUIComponentProps<'div', ListboxSeparatorState> {
+  /**
+   * The orientation of the separator.
+   * @default 'horizontal'
+   */
+  orientation?: Orientation | undefined;
+}
+
+export interface ListboxSeparatorState {
+  /**
+   * The orientation of the separator.
+   */
+  orientation: Orientation;
+}
+
+export namespace ListboxSeparator {
+  export type Props = ListboxSeparatorProps;
+  export type State = ListboxSeparatorState;
+}

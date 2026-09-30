@@ -1,0 +1,138 @@
+import type { JSX } from '@solidjs/web';
+import type { Ref, RefInput } from '../solid-utils/refs';
+
+/**
+ * Props that can be spread on a rendered element, plus a Base UI ref of any
+ * supported shape (callback, `{ current }` object, or array of either).
+ */
+export type HTMLProps<T = any> = JSX.HTMLAttributes<T> & {
+  ref?: RefInput<T> | undefined;
+  [key: string]: any;
+};
+
+/**
+ * Shape of the render prop: a function that takes props to be spread on the
+ * element and the component's state and returns a Solid JSX element.
+ *
+ * Unlike React, Solid has no `cloneElement`, so the function form is the
+ * canonical way to customize the rendered element. A plain DOM element is
+ * also accepted; props are spread onto it directly.
+ *
+ * @template Props Props to be spread on the rendered element.
+ * @template State Component's internal state.
+ */
+export type ComponentRenderFn<Props, State> = (props: Props, state: State) => JSX.Element;
+
+export type BaseUIEvent<E extends Event> = E & {
+  preventBaseUIHandler: () => void;
+  readonly baseUIHandlerPrevented?: boolean | undefined;
+};
+
+export type MaybeBaseUIEvent<E extends Event> = E &
+  Partial<Pick<BaseUIEvent<E>, 'preventBaseUIHandler' | 'baseUIHandlerPrevented'>>;
+
+export interface FloatingUIOpenChangeDetails {
+  open: boolean;
+  reason: string;
+  nativeEvent: Event;
+  nested: boolean;
+  triggerElement?: Element | undefined;
+}
+
+type WithPreventBaseUIHandler<T> = T extends (event: infer E) => any
+  ? E extends Event
+    ? (event: BaseUIEvent<E>) => ReturnType<T>
+    : T
+  : T extends undefined
+    ? undefined
+    : T;
+
+/**
+ * Adds a `preventBaseUIHandler` method to all event handlers.
+ */
+export type WithBaseUIEvent<T> = {
+  [K in keyof T]: WithPreventBaseUIHandler<T[K]>;
+};
+
+/**
+ * A style value: Solid accepts either a CSS properties object (hyphenated keys)
+ * or a plain string.
+ */
+export type StyleValue = JSX.CSSProperties | string;
+
+/**
+ * Props shared by all Base UI components.
+ * Contains `className` (string or callback taking the component's state as an argument)
+ * and `render` (function or element to customize rendering).
+ */
+export type BaseUIComponentProps<
+  ElementType extends keyof JSX.IntrinsicElements,
+  State,
+  RenderFunctionProps = HTMLProps,
+> = Omit<
+  WithBaseUIEvent<JSX.IntrinsicElements[ElementType]>,
+  'class' | 'color' | 'style' | 'ref'
+> & {
+  /**
+   * CSS class applied to the element, or a function that
+   * returns a class based on the component's state.
+   */
+  className?: string | ((state: State) => string | undefined) | undefined;
+  /**
+   * CSS class applied to the element (Solid-native alias merged with `className`).
+   */
+  class?: JSX.ClassValue | undefined;
+  /**
+   * Allows you to replace the component's HTML element
+   * with a different tag, or compose it with another component.
+   *
+   * Accepts a function that returns the element to render, or a DOM element.
+   */
+  render?: JSX.Element | ComponentRenderFn<RenderFunctionProps, State> | undefined;
+  /**
+   * Style applied to the element, or a function that
+   * returns a style based on the component's state.
+   */
+  style?: StyleValue | ((state: State) => StyleValue | undefined) | undefined;
+  /**
+   * A ref to the rendered element: a callback, a `{ current }` object,
+   * or an array of either.
+   */
+  ref?: RefInput<any> | undefined;
+};
+
+export interface NativeButtonProps {
+  /**
+   * Whether the component renders a native `<button>` element when replacing it
+   * via the `render` prop.
+   * Set to `false` if the rendered element is not a button (for example, `<div>`).
+   * @default true
+   */
+  nativeButton?: boolean | undefined;
+}
+
+export interface NonNativeButtonProps {
+  /**
+   * Whether the component renders a native `<button>` element when replacing it
+   * via the `render` prop.
+   * Set to `true` if the rendered element is a native button.
+   * @default false
+   */
+  nativeButton?: boolean | undefined;
+}
+
+/**
+ * Simplifies the display of a type (without modifying it).
+ * Taken from https://effectivetypescript.com/2022/02/25/gentips-4-display/
+ */
+export type Simplify<T> = T extends Function ? T : { [K in keyof T]: T[K] };
+
+/**
+ * Makes specified keys in a type required.
+ *
+ * @template T - The original type.
+ * @template K - The keys to make required.
+ */
+export type RequiredExcept<T, K extends keyof T> = Required<Omit<T, K>> & Pick<T, K>;
+
+export type Orientation = 'horizontal' | 'vertical';
