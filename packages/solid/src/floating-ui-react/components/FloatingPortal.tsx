@@ -1,4 +1,4 @@
-import { createEffect, createRenderEffect, createSignal, omit, type Accessor } from 'solid-js';
+import { createEffect, createRenderEffect, createSignal, omit, untrack, type Accessor } from 'solid-js';
 import { Portal, type JSX } from '@solidjs/web';
 import { isNode } from '@floating-ui/utils/dom';
 import { addEventListener } from '@base-ui/utils/addEventListener';
@@ -6,6 +6,7 @@ import { mergeCleanups } from '@base-ui/utils/mergeCleanups';
 import { EMPTY_OBJECT } from '@base-ui/utils/empty';
 import { Show } from 'solid-js';
 import { FocusGuard } from '../../utils/FocusGuard';
+import { IsolateChildren } from '../../solid-utils/isolateChildren';
 import {
   enableFocusInside,
   disableFocusInside,
@@ -158,12 +159,17 @@ export function useFloatingPortalNode(
     },
   );
 
+  // Resolved once and cached so the `Portal` insertion effect never re-creates
+  // the portal element: an element-less provider wrapping this subtree would
+  // otherwise deep-resolve the render thunk on every invalidation and livelock.
+  const isolatedPortalElement = untrack(() => <IsolateChildren>{portalElement}</IsolateChildren>);
+
   // This `Portal` injects `portalElement` into the container. Another `Portal`
   // inside `FloatingPortal`/`FloatingPortalLite` then injects the children
   // into `portalElement`.
   const portalSubtree = (
     <Show when={containerElement()}>
-      {(container) => <Portal mount={container() as HTMLElement}>{portalElement}</Portal>}
+      {(container) => <Portal mount={container() as HTMLElement}>{isolatedPortalElement}</Portal>}
     </Show>
   );
 
