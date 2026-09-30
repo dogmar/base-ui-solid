@@ -31,7 +31,7 @@ export * from './progress';
 export * from './radio';
 export * from './radio-group';
 export * from './scroll-area';
-// export * from './select';
+export * from './select';
 export * from './separator';
 export * from './slider';
 export * from './switch';
