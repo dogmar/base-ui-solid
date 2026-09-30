@@ -200,6 +200,11 @@ Never import React hook modules (`useControlled`, `useMergedRefs`, `useId`,
     `mergeProps(hookA.reference, hookB.reference)`) must go through
     `createMemo` for identity stability, or effects reading and writing the
     store oscillate.
+33a. Render dynamic lists of store-backed components with `<For keyed>`
+    (e.g. `<For each={manager.toasts} keyed={(t) => t.id}>`), never raw
+    `array.map()` in JSX: mapping re-creates every item on any store write,
+    and an item whose init effect writes back to the store then loops
+    unboundedly.
 34. Debugging an un-interruptible vitest hang: it's a synchronous reactive
     loop. Monkeypatch `document.createElement` with a counter+throw in a
     scratch test to find the churning effect's stack.
