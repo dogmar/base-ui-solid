@@ -114,9 +114,13 @@ export function useRenderElement<
     return merged;
   });
 
+  // The rendered element is memoized so re-invocations of the returned thunk
+  // (Solid re-resolves all function children of an insertion point when any
+  // sibling's resolved value changes) hand back the same DOM element instead
+  // of re-creating the subtree.
   return (
     <>
-      {(() => {
+      {createMemo(() => {
         if (!enabled()) {
           return null;
         }

@@ -1,4 +1,4 @@
-import { createRenderEffect, createSignal, type Accessor } from 'solid-js';
+import { createMemo, createRenderEffect, createSignal, getOwner, type Accessor } from 'solid-js';
 import type { FloatingEvents, ContextData, ReferenceType } from '../types';
 import { type BaseUIChangeEventDetails } from '../../internals/createBaseUIEventDetails';
 import { createEventEmitter } from '../utils/createEventEmitter';
@@ -158,7 +158,12 @@ export class FloatingRootStore {
    */
   useState<Key extends keyof Selectors>(key: Key): Accessor<ReturnType<Selectors[Key]>> {
     const selector = selectors[key];
-    return () => selector(this.trackedState()) as ReturnType<Selectors[Key]>;
+    const read = () => selector(this.trackedState()) as ReturnType<Selectors[Key]>;
+    // Selector-level memoization: without it every reader invalidates on every
+    // store write, and effects that read the store while syncing derived
+    // objects back into it oscillate. Falls back to a plain accessor when
+    // called without an owner.
+    return getOwner() ? createMemo(read) : read;
   }
 
   /**

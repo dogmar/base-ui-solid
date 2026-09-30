@@ -181,6 +181,29 @@ Never import React hook modules (`useControlled`, `useMergedRefs`, `useId`,
   from `packages/solid` (prefix commands with
   `npm_config_verify_deps_before_run=false` in restricted environments).
 
+## Popup ports (tooltip/popover/dialog/menu/select family)
+
+30. Build popup stores as `class XStore extends Store<...>` from
+    `solid-utils/store.ts` (its `useState` returns createMemo'd accessors —
+    selector-level memoization is load-bearing) and create them via
+    `usePopupRootStore`; reuse the ported `utils/popups/popupStoreUtils.ts`
+    helpers (`useOpenStateTransitions`, `usePopupInteractionProps`,
+    `useTriggerRegistration`, ...).
+31. A Root that renders no element of its own must wrap its provider children
+    in `IsolateChildren` (`solid-utils/isolateChildren.tsx`); components whose
+    refs write reactive state (trigger, positioner, popup) should return
+    `<IsolateChildren>{element}</IsolateChildren>`.
+32. Never conditionally `<Show>`-mount a portal or an interactions component —
+    mount it always and gate behavior inside (hook `enabled` flags). Use
+    `IsolatedFloatingPortalLite` for portal parts.
+33. Any derived props object synced into a store (e.g.
+    `mergeProps(hookA.reference, hookB.reference)`) must go through
+    `createMemo` for identity stability, or effects reading and writing the
+    store oscillate.
+34. Debugging an un-interruptible vitest hang: it's a synchronous reactive
+    loop. Monkeypatch `document.createElement` with a counter+throw in a
+    scratch test to find the churning effect's stack.
+
 ## Exemplars
 
 Study these before porting anything:
